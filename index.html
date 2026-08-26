@@ -2,63 +2,363 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Network+ Day 15 Cyber Incident Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S-6 SOC Incident Command | Network+ N10-009</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
   <style>
-    body { background-color: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace; margin: 0; padding: 20px; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #30363d; padding-bottom: 10px; margin-bottom: 20px; }
-    .container { display: flex; gap: 20px; }
-    .main-panel { flex: 3; border: 1px solid #30363d; padding: 25px; border-radius: 8px; background: #161b22; position: relative; }
-    .side-panel { flex: 1; border: 1px solid #30363d; padding: 20px; border-radius: 8px; background: #161b22; }
-    h1, h2, h3 { color: #f0f6fc; margin-top: 0; }
-    .terminal { background: #000; color: #39ff14; padding: 20px; border-radius: 6px; font-size: 1.15em; white-space: pre-wrap; line-height: 1.5; border: 1px solid #238636; }
-    .btn { background: #238636; color: white; border: none; padding: 12px 24px; font-size: 1.1rem; cursor: pointer; border-radius: 6px; font-weight: bold; font-family: inherit; }
-    .btn:hover { background: #2ea043; }
-    .alert-banner { background: #d29922; color: #000; padding: 12px; font-weight: bold; font-size: 1.2rem; border-radius: 6px; margin-bottom: 15px; text-align: center; display: none; }
-    .player-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
-    .player-list li { background: #21262d; margin: 6px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-    .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; background-color: #484f58; }
-    .status-dot.answered { background-color: #39ff14; box-shadow: 0 0 8px #39ff14; }
-    .qr-large { width: 240px; height: 240px; display: block; margin: 20px auto; border: 4px solid #30363d; border-radius: 8px; }
-    .qr-small { width: 90px; height: 90px; border: 2px solid #30363d; border-radius: 4px; }
-    .counter-box { font-size: 1.4rem; color: #58a6ff; font-weight: bold; margin-bottom: 15px; }
-    .correct-highlight { background: #1f6feb; color: white; padding: 10px; border-radius: 4px; margin-top: 15px; font-weight: bold; }
+    :root {
+      --bg: #06090e;
+      --panel: #0d1520;
+      --panel-border: #1a293d;
+      --neon-green: #00ff66;
+      --neon-cyan: #00f0ff;
+      --neon-red: #ff3366;
+      --neon-amber: #ffaa00;
+      --text: #c5d1e0;
+      --text-bright: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      margin: 0;
+      padding: 20px;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.03) 0%, transparent 80%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 30px 30px, 30px 30px;
+      min-height: 100vh;
+    }
+
+    /* Top HUD Navigation Bar */
+    .hud-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-left: 5px solid var(--neon-cyan);
+      padding: 15px 25px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+    }
+
+    .title-block h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      margin: 0;
+      color: var(--text-bright);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .title-block .subtitle {
+      color: var(--neon-cyan);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* Decaying Security Posture Health Bar */
+    .posture-container {
+      width: 280px;
+      text-align: right;
+    }
+
+    .posture-label {
+      font-size: 0.8rem;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .posture-bar-bg {
+      background: #152232;
+      height: 14px;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+    }
+
+    .posture-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--neon-red) 0%, var(--neon-amber) 50%, var(--neon-green) 100%);
+      transition: width 0.6s ease;
+      box-shadow: 0 0 10px var(--neon-green);
+    }
+
+    /* Layout Grid */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      gap: 20px;
+    }
+
+    .main-stage {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 30px;
+      position: relative;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+    }
+
+    .side-hud {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Classified Badge & Intel Cards */
+    .intel-tag {
+      display: inline-block;
+      background: rgba(255, 51, 102, 0.15);
+      border: 1px solid var(--neon-red);
+      color: var(--neon-red);
+      padding: 4px 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 3px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .intel-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--text-bright);
+      font-size: 1.6rem;
+      margin: 0 0 20px 0;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 10px;
+    }
+
+    .story-card {
+      background: #060a10;
+      border: 1px solid #1c2d42;
+      border-left: 4px solid var(--neon-cyan);
+      padding: 25px;
+      border-radius: 6px;
+      font-size: 1.2rem;
+      line-height: 1.7;
+      color: var(--text-bright);
+      margin-bottom: 25px;
+      white-space: pre-wrap;
+    }
+
+    .question-card {
+      background: #09101a;
+      border: 1px solid var(--neon-amber);
+      padding: 25px;
+      border-radius: 6px;
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: #fff;
+      margin-bottom: 25px;
+      box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);
+    }
+
+    /* Controls & Buttons */
+    .btn-action {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #00f0ff 0%, #0088ff 100%);
+      color: #000;
+      border: none;
+      padding: 16px 32px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+    }
+
+    /* Live Counter & Alerts */
+    .alert-banner {
+      background: rgba(255, 170, 0, 0.2);
+      border: 2px solid var(--neon-amber);
+      color: var(--neon-amber);
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+      animation: pulse 1.5s infinite alternate;
+      display: none;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 5px rgba(255, 170, 0, 0.2); }
+      100% { box-shadow: 0 0 20px rgba(255, 170, 0, 0.6); }
+    }
+
+    .response-tracker {
+      font-size: 1.3rem;
+      color: var(--neon-cyan);
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    /* Player Roster UI */
+    .roster-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      color: var(--text-bright);
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .player-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      max-height: 480px;
+    }
+
+    .player-card {
+      background: #070c13;
+      border: 1px solid var(--panel-border);
+      padding: 12px 15px;
+      border-radius: 5px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.3s;
+    }
+
+    .player-card.active-sub {
+      border-color: var(--neon-green);
+      box-shadow: inset 0 0 8px rgba(0, 255, 102, 0.15);
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #25384e;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .status-indicator.ready {
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+    }
+
+    /* QR Code Display Framing */
+    .qr-frame {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      display: inline-block;
+      margin: 20px auto;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+    }
+
+    .qr-mini-frame {
+      background: #fff;
+      padding: 6px;
+      border-radius: 4px;
+      width: 80px;
+      height: 80px;
+    }
+
+    .connection-tag {
+      font-size: 0.75rem;
+      color: var(--neon-green);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
 
-  <div class="header-bar">
-    <div>
-      <h1>[S-6 INCIDENT COMMAND] Network+ N10-009 Review</h1>
-      <div id="phase-tag" style="color: #8b949e; font-weight: bold;">STATUS: LOBBY IN PROGRESS</div>
+  <!-- Top HUD Bar -->
+  <div class="hud-bar">
+    <div class="title-block">
+      <h1>Tactical SOC Command Console</h1>
+      <div class="subtitle">NETWORK+ DAY 15 REVIEW // SECURITY CONCEPTS & ATTACKS</div>
     </div>
-    <div id="mini-qr-container" style="display:none; text-align: center;">
-      <img id="qr-mini" class="qr-small" src="" alt="QR">
-      <div style="font-size: 0.7rem; color: #8b949e;">SCAN TO JOIN</div>
+    
+    <div class="posture-container">
+      <div class="posture-label">
+        <span>SECURITY POSTURE</span>
+        <span id="posture-pct">100%</span>
+      </div>
+      <div class="posture-bar-bg">
+        <div id="posture-fill" class="posture-bar-fill"></div>
+      </div>
+    </div>
+
+    <div id="mini-qr-box" style="display:none; text-align:center;">
+      <div class="qr-mini-frame">
+        <img id="qr-mini" src="" style="width:100%; height:100%;">
+      </div>
+      <div class="connection-tag">SCAN TO JOIN</div>
     </div>
   </div>
 
-  <div class="container">
-    <div class="main-panel">
-      <div id="alert-box" class="alert-banner">⚡ ALL STATIONS HAVE RESPONDED! READY TO REVEAL. ⚡</div>
-      <div id="display-title"><h2>OP-LOBBY: Waiting for SOC Agents</h2></div>
-      <div id="counter-display" class="counter-box" style="display:none;">Responses Transmitted: <span id="ans-count">0</span> / <span id="total-count">0</span></div>
-      <div id="display-body" class="terminal">Scan the QR code to log into the Tactical Terminal...</div>
-      <div id="qr-lobby-box">
-        <img id="qr-large" class="qr-large" src="" alt="Lobby QR">
+  <!-- Main Grid Layout -->
+  <div class="grid-container">
+    <div class="main-stage">
+      <div id="alert-banner" class="alert-banner">⚡ ALL FIELD AGENTS HAVE SUBMITTED RESPONSES! READY FOR DEBRIEF. ⚡</div>
+      
+      <div id="stage-badge" class="intel-tag">OPERATION STATUS: LOBBY RECRUITMENT</div>
+      <h2 id="stage-title" class="intel-title">Awaiting Agent Tactical Connections...</h2>
+
+      <div id="response-tracker" class="response-tracker" style="display:none;">
+        TRANSMISSIONS RECEIVED: <span id="ans-count" style="color:#fff;">0</span> / <span id="total-count" style="color:#fff;">0</span>
       </div>
+
+      <div id="stage-content" class="story-card">
+Scan the QR code below to pair your mobile terminal to the S-6 Tactical Network.
+Enter your Callsign to join the operation.
+      </div>
+
+      <div id="lobby-qr-container" style="text-align:center;">
+        <div class="qr-frame">
+          <img id="qr-large" src="" style="width:220px; height:220px; display:block;">
+        </div>
+      </div>
+
       <br>
-      <button id="action-btn" class="btn" onclick="advanceState()">Commence Operation (Node 1 Briefing)</button>
+      <button id="btn-next" class="btn-action" onclick="advanceOperation()">Commence Operation (Node 1)</button>
     </div>
 
-    <div class="side-panel">
-      <h3>Active Agents (<span id="player-count">0</span>)</h3>
-      <ul id="players" class="player-list"></ul>
+    <!-- Side HUD Roster -->
+    <div class="side-hud">
+      <div class="roster-title">
+        <span>ACTIVE AGENTS</span>
+        <span id="agent-count-badge" style="color:var(--neon-cyan); font-weight:bold;">0</span>
+      </div>
+      <ul id="agent-roster" class="player-list"></ul>
     </div>
   </div>
 
   <script>
+    // Firebase credentials configuration
     const firebaseConfig = {
   apiKey: "AIzaSyAp-Bft2q1zwGoF6q9wMdyQkBd4BDTbnms",
   authDomain: "operation-voluntold.firebaseapp.com",
@@ -70,75 +370,83 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Set QR code links dynamically
     const mobileUrl = window.location.href.replace('index.html', '') + 'mobile.html';
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(mobileUrl)}`;
-    document.getElementById('qr-large').src = qrSrc;
-    document.getElementById('qr-mini').src = qrSrc;
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(mobileUrl)}`;
+    document.getElementById('qr-large').src = qrApiUrl;
+    document.getElementById('qr-mini').src = qrApiUrl;
 
-    const gameData = [
+    // Narrative and Game Objectives Data
+    const storyNodes = [
       {
-        nodeKey: "NODE_1",
-        title: "NODE 1: The 0300 Voluntold Shift",
-        story: "OPERATION BANNER BADGER: You were voluntold to cover the graveyard shift at the SOC because you made eye contact with the Chief. Suddenly, an external host starts probing port responses to identify OS versions and active services[cite: 1]. The commander demands to know what's happening before his morning coffee runs out.",
-        question: "TERMINAL PROMPT: Which phase of enumeration is actively targeting specific system/software versions[cite: 1]?\n\n[A] Footprinting\n[B] Fingerprinting\n[C] Dumpster Diving\n[D] Tailgating",
+        key: "NODE_1",
+        badge: "CLASSIFIED // INCIDENT 01 - RECONNAISSANCE",
+        title: "The 0300 Voluntold Shift",
+        story: "OPERATION BANNER BADGER: You were voluntold to cover the graveyard shift at the SOC because you made direct eye contact with the Chief. Suddenly, an external host starts probing port responses across the subnet to identify operating system versions and active software services[cite: 1]. The CO demands an immediate diagnosis before his morning coffee runs out.",
+        question: "TERMINAL PROMPT: Which specific phase of enumeration is actively probing responses to identify system and software versions[cite: 1]?\n\n[A] Footprinting\n[B] Fingerprinting\n[C] Dumpster Diving\n[D] Tailgating",
         correct: "B",
-        explanation: "DEBRIEF: Fingerprinting specifically probes open ports and system responses to identify OS and software version numbers[cite: 1]. Footprinting maps out the broader network topology[cite: 1]."
+        debrief: "DEBRIEF: Fingerprinting explicitly analyzes service/port responses to uncover operating system and software version numbers[cite: 1]. Footprinting maps out broader network topology and infrastructure bounds[cite: 1]."
       },
       {
-        nodeKey: "NODE_2",
-        title: "NODE 2: Mandatory Fun Under Attack",
-        story: "DEFCON 3: While the unit is trapped in a mandatory briefing, the edge firewall starts screaming. Multiple external threat actors are spamming TCP SYN packets, exhausting server connection queues and knocking services offline[cite: 1]. The CO is threatening to cancel weekend liberty if email goes down.",
-        question: "INCIDENT: What type of attack vector is currently saturating the perimeter[cite: 1]?\n\n[A] On-Path Attack\n[B] Distributed Denial of Service (DDoS)\n[C] MAC Flooding\n[D] ARP Spoofing",
+        key: "NODE_2",
+        badge: "CLASSIFIED // INCIDENT 02 - EDGE INTRUSION",
+        title: "Mandatory Fun Under Attack",
+        story: "DEFCON 3: While the unit is trapped in a mandatory briefing, the edge firewall starts screaming alerts. Multiple external threat actors are flooding the perimeter with TCP SYN packets, exhausting server connection queues and threatening a full outage[cite: 1]. The CO vows to cancel weekend liberty if email goes down.",
+        question: "INCIDENT ASSESSMENT: What specific attack vector is currently saturating server resources from external targets[cite: 1]?\n\n[A] On-Path Attack\n[B] Distributed Denial of Service (DDoS)\n[C] MAC Flooding\n[D] ARP Spoofing",
         correct: "B",
-        explanation: "DEBRIEF: A DDoS attack uses multiple external systems to flood bandwidth or exhaust server connection pools (like SYN floods)[cite: 1]."
+        debrief: "DEBRIEF: A Distributed Denial of Service (DDoS) attack leverages multiple distributed hosts to flood bandwidth or exhaust connection resources (such as SYN floods)[cite: 1]."
       },
       {
-        nodeKey: "NODE_3",
-        title: "NODE 3: The 'I Brought My Own Router' Incident",
-        story: "SELF-INFLICTED WOUND: A private plugged an unauthorized wireless router bought from the local PX into the wall jack to bypass network filters[cite: 1]. Now workstations across the building are throwing duplicate IP errors[cite: 1].",
-        question: "TERMINAL PROMPT: What automatic feature caused client workstations to assign themselves 169.254.x.x addresses when the rogue router disrupted DHCP pool distribution[cite: 1]?\n\n[A] APIPA\n[B] DNSSEC\n[C] Kerberos\n[D] TACACS+",
+        key: "NODE_3",
+        badge: "CLASSIFIED // INCIDENT 03 - INTERNAL SABOTAGE",
+        title: "The 'I Brought My Own Router' Incident",
+        story: "SELF-INFLICTED WOUND: A private plugged an unauthorized wireless router bought at the local PX into an office wall jack to bypass network filters[cite: 1]. Within hours, workstations across the battalion are throwing duplicate IP errors and assigning themselves 169.254.x.x addresses[cite: 1].",
+        question: "TERMINAL PROMPT: What automatic client mechanism assigned 169.254.x.x addresses when the rogue router disrupted normal DHCP address assignment[cite: 1]?\n\n[A] APIPA\n[B] DNSSEC\n[C] Kerberos\n[D] TACACS+",
         correct: "A",
-        explanation: "DEBRIEF: Automatic Private IP Addressing (APIPA) assigns a 169.254.0.0/16 address when a device cannot contact a valid DHCP server[cite: 1]."
+        debrief: "DEBRIEF: Automatic Private IP Addressing (APIPA) assigns a 169.254.0.0/16 address when a device fails to obtain an IP lease from a valid DHCP server[cite: 1]."
       },
       {
-        nodeKey: "NODE_4",
-        title: "NODE 4: Core Switch Meltdown",
-        story: "S-6 EMERGENCY: An attacker is hammering the core switch with thousands of fake source MAC addresses per second, completely filling the CAM table[cite: 1]. Your $20,000 enterprise switch just panicked and defaulted into acting like a cheap, unmanaged hub[cite: 1].",
-        question: "INCIDENT: What layer 2 attack just turned your secure network into a free-for-all broadcast party[cite: 1]?\n\n[A] VLAN Hopping\n[B] MAC Flooding\n[C] Double Tagging\n[D] Deauthentication Attack",
+        key: "NODE_4",
+        badge: "CLASSIFIED // INCIDENT 04 - SWITCH MELTDOWN",
+        title: "Core Switch Meltdown",
+        story: "S-6 EMERGENCY: An attacker is spamming the core switch with thousands of fake source MAC addresses per second, overflowing the CAM table[cite: 1]. Your $20,000 enterprise switch panics and defaults into acting like an unmanaged hub, broadcasting all traffic across every port[cite: 1].",
+        question: "INCIDENT ASSESSMENT: What Layer 2 attack just turned your secure switch into a broadcast hub[cite: 1]?\n\n[A] VLAN Hopping\n[B] MAC Flooding\n[C] Double Tagging\n[D] Deauthentication Attack",
         correct: "B",
-        explanation: "DEBRIEF: MAC Flooding overloads the switch CAM table with spoofed source MAC addresses, forcing it to broadcast all incoming packets out every port like a hub[cite: 1]."
+        debrief: "DEBRIEF: MAC Flooding overloads a switch's Content Addressable Memory (CAM) table with spoofed source MAC addresses, forcing the switch to flood incoming traffic out all ports[cite: 1]."
       },
       {
-        nodeKey: "NODE_5",
-        title: "NODE 5: Guards at the Gate",
-        story: "CREDENTIAL BREACH: Adversaries are trying to bypass local authentication over an untrusted network connection[cite: 1]. They are trying to fool the 'three-headed guard dog' system to issue a Ticket Granting Ticket (TGT) without proper validation[cite: 1].",
-        question: "TERMINAL PROMPT: Which secure authentication protocol uses a Key Distribution Center (KDC) to issue TGTs over untrusted networks[cite: 1]?\n\n[A] RADIUS\n[B] TACACS+\n[C] Kerberos\n[D] PAP",
+        key: "NODE_5",
+        badge: "CLASSIFIED // INCIDENT 05 - IDENTITY BREACH",
+        title: "Guards at the Gate",
+        story: "CREDENTIAL BREACH: Adversaries are attempting to bypass local access controls over an unencrypted network domain[cite: 1]. They are trying to trick the 'three-headed guard dog' system into issuing a Ticket Granting Ticket (TGT) without valid authentication credentials[cite: 1].",
+        question: "TERMINAL PROMPT: Which secure authentication protocol uses a Key Distribution Center (KDC) to grant TGTs over insecure networks[cite: 1]?\n\n[A] RADIUS\n[B] TACACS+\n[C] Kerberos\n[D] PAP",
         correct: "C",
-        explanation: "DEBRIEF: Kerberos relies on a Key Distribution Center (KDC) to issue Ticket Granting Tickets (TGTs) for secure SSO authentication over insecure networks[cite: 1]."
+        debrief: "DEBRIEF: Kerberos uses a Key Distribution Center (KDC) consisting of an Authentication Service and Ticket Granting Service to safely issue TGTs across insecure networks[cite: 1]."
       },
       {
-        nodeKey: "NODE_6",
-        title: "NODE 6: The Inspector General Arrives",
-        story: "AFTER-ACTION REPORT: The attack is contained, but now the auditors are walking in the door with clipboards. Because payment transactions were processed on the base network during the breach, compliance officers demand proof that credit card data standards were upheld[cite: 1].",
-        question: "AUDIT REQUIREMENT: Which regulatory standard specifically dictates security requirements for handling credit card data[cite: 1]?\n\n[A] GDPR\n[B] PCI DSS\n[C] HIPAA\n[D] ISO 27001",
+        key: "NODE_6",
+        badge: "CLASSIFIED // INCIDENT 06 - REGULATORY AUDIT",
+        title: "The Inspector General Arrives",
+        story: "AFTER-ACTION REPORT: The physical and digital breaches are contained, but auditors with clipboards have just walked in. Because credit card transactions were processed on base during the breach, inspectors demand verification of mandatory compliance standards[cite: 1].",
+        question: "AUDIT REQUIREMENT: Which regulatory standard specifically sets security requirements for safeguarding credit card data[cite: 1]?\n\n[A] GDPR\n[B] PCI DSS\n[C] HIPAA\n[D] ISO 27001",
         correct: "B",
-        explanation: "DEBRIEF: Payment Card Industry Data Security Standard (PCI DSS) mandates security controls specifically for processing and storing cardholder data[cite: 1]."
+        debrief: "DEBRIEF: Payment Card Industry Data Security Standard (PCI DSS) governs organizations handling credit card transactions to ensure payment security[cite: 1]."
       }
     ];
 
     let currentIdx = 0;
     let phase = "LOBBY"; // LOBBY -> NARRATIVE -> QUESTION -> REVEAL -> END
-    let playersData = {};
+    let postureScore = 100;
 
-    function updateGameState() {
+    function updateDbState() {
       db.ref('game_state').set({
         nodeIndex: currentIdx,
         phase: phase,
-        currentNodeKey: gameData[currentIdx] ? gameData[currentIdx].nodeKey : "END"
+        currentNodeKey: storyNodes[currentIdx] ? storyNodes[currentIdx].key : "END"
       });
     }
 
-    function resetPlayerAnswers() {
+    function clearAgentResponses() {
       db.ref('players').once('value', (snapshot) => {
         const players = snapshot.val() || {};
         for (let id in players) {
@@ -147,135 +455,150 @@
       });
     }
 
-    function advanceState() {
-      const btn = document.getElementById('action-btn');
-      const alertBox = document.getElementById('alert-box');
-      const counterDisplay = document.getElementById('counter-display');
-      const miniQr = document.getElementById('mini-qr-container');
-      const lobbyQrBox = document.getElementById('qr-lobby-box');
-      
-      alertBox.style.display = "none";
+    function advanceOperation() {
+      const btn = document.getElementById('btn-next');
+      const alertBanner = document.getElementById('alert-banner');
+      const tracker = document.getElementById('response-tracker');
+      const miniQr = document.getElementById('mini-qr-box');
+      const lobbyQr = document.getElementById('lobby-qr-container');
+
+      alertBanner.style.display = "none";
 
       if (phase === "LOBBY") {
         phase = "NARRATIVE";
         miniQr.style.display = "block";
-        lobbyQrBox.style.display = "none";
-        resetPlayerAnswers();
-        updateDisplay();
-        btn.innerText = "Deploy Question";
+        lobbyQr.style.display = "none";
+        clearAgentResponses();
+        renderScreen();
+        btn.innerText = "Deploy Question Terminal";
       } else if (phase === "NARRATIVE") {
         phase = "QUESTION";
-        counterDisplay.style.display = "block";
-        resetPlayerAnswers();
-        updateDisplay();
-        btn.innerText = "Reveal Answer & Scoring";
+        tracker.style.display = "block";
+        clearAgentResponses();
+        renderScreen();
+        btn.innerText = "Evaluate & Reveal Analysis";
       } else if (phase === "QUESTION") {
         phase = "REVEAL";
-        counterDisplay.style.display = "none";
-        calculateScores();
-        updateDisplay();
-        if (currentIdx < gameData.length - 1) {
-          btn.innerText = "Next Narrative Node";
-        } else {
-          btn.innerText = "Final Incident Debrief";
-        }
+        tracker.style.display = "none";
+        evaluateScoresAndPosture();
+        renderScreen();
+        btn.innerText = (currentIdx < storyNodes.length - 1) ? "Next Tactical Node" : "Final Operation Debrief";
       } else if (phase === "REVEAL") {
         currentIdx++;
-        if (currentIdx < gameData.length) {
+        if (currentIdx < storyNodes.length) {
           phase = "NARRATIVE";
-          resetPlayerAnswers();
-          updateDisplay();
-          btn.innerText = "Deploy Question";
+          clearAgentResponses();
+          renderScreen();
+          btn.innerText = "Deploy Question Terminal";
         } else {
           phase = "END";
-          updateDisplay();
+          renderScreen();
           btn.style.display = "none";
         }
       }
-      updateGameState();
+      updateDbState();
     }
 
-    function calculateScores() {
-      const node = gameData[currentIdx];
+    function evaluateScoresAndPosture() {
+      const node = storyNodes[currentIdx];
       db.ref('players').once('value', (snapshot) => {
         const players = snapshot.val() || {};
+        let incorrectCount = 0;
+        let totalResponded = 0;
+
         for (let id in players) {
           let p = players[id];
-          let currentScore = p.score !== undefined ? p.score : 100;
-          if (p.currentAnswer && p.currentAnswer !== node.correct) {
-            currentScore = Math.max(0, currentScore - 15);
-          } else if (p.currentAnswer === node.correct) {
-            currentScore += 10;
+          let score = p.score !== undefined ? p.score : 100;
+
+          if (p.currentAnswer && p.currentAnswer !== "") {
+            totalResponded++;
+            if (p.currentAnswer === node.correct) {
+              score += 10;
+            } else {
+              score = Math.max(0, score - 15);
+              incorrectCount++;
+            }
+            db.ref(`players/${id}/score`).set(score);
           }
-          db.ref(`players/${id}/score`).set(currentScore);
+        }
+
+        // Degrade Security Posture Health Bar if mistakes occurred
+        if (incorrectCount > 0) {
+          postureScore = Math.max(15, postureScore - (incorrectCount * 8));
+          document.getElementById('posture-pct').innerText = postureScore + "%";
+          document.getElementById('posture-fill').style.width = postureScore + "%";
         }
       });
     }
 
-    function updateDisplay() {
-      const titleBox = document.getElementById('display-title');
-      const bodyBox = document.getElementById('display-body');
-      const phaseTag = document.getElementById('phase-tag');
-      const node = gameData[currentIdx];
+    function renderScreen() {
+      const badge = document.getElementById('stage-badge');
+      const title = document.getElementById('stage-title');
+      const content = document.getElementById('stage-content');
+      const node = storyNodes[currentIdx];
 
       if (phase === "NARRATIVE") {
-        phaseTag.innerText = `STATUS: NODE ${currentIdx + 1} BRIEFING IN PROGRESS`;
-        titleBox.innerHTML = `<h2>${node.title}</h2>`;
-        bodyBox.innerText = node.story;
+        badge.innerText = node.badge;
+        title.innerText = node.title;
+        content.className = "story-card";
+        content.innerText = node.story;
       } else if (phase === "QUESTION") {
-        phaseTag.innerText = `STATUS: NODE ${currentIdx + 1} QUESTION ACTIVE`;
-        titleBox.innerHTML = `<h2>${node.title} - ENGAGEMENT</h2>`;
-        bodyBox.innerText = node.question;
+        badge.innerText = node.badge + " // ENGAGEMENT ACTIVE";
+        title.innerText = node.title + " - Question Terminal";
+        content.className = "question-card";
+        content.innerText = node.question;
       } else if (phase === "REVEAL") {
-        phaseTag.innerText = `STATUS: NODE ${currentIdx + 1} BATTLE DAMAGE ASSESSMENT`;
-        titleBox.innerHTML = `<h2>${node.title} - ANALYSIS</h2>`;
-        bodyBox.innerHTML = node.question + `<div class="correct-highlight">CORRECT OPTION: [${node.correct}]</div>\n` + node.explanation;
+        badge.innerText = node.badge + " // DAMAGE ASSESSMENT";
+        title.innerText = node.title + " - Official Debrief";
+        content.className = "story-card";
+        content.innerHTML = `${node.question}\n\n<div style="color:var(--neon-green); font-weight:bold; margin-top:10px;">CORRECT CHOICE: [${node.correct}]</div>\n${node.debrief}`;
       } else if (phase === "END") {
-        phaseTag.innerText = `STATUS: OPERATION COMPLETE`;
-        titleBox.innerHTML = `<h2>INCIDENT DEBRIEF COMPLETE</h2>`;
-        bodyBox.innerText = "All network threat vectors contained. Review final agent standings on the right board.";
+        badge.innerText = "OPERATION COMPLETE // DEBRIEF";
+        title.innerText = "Final Network Incident Assessment";
+        content.className = "story-card";
+        content.innerText = "All threat vectors addressed. Security audit completed.\nReview the final agent standings on the right leaderboard.";
       }
     }
 
-    // Live player sync & response tracking
+    // Realtime Database Player Listener
     db.ref('players').on('value', (snapshot) => {
-      const playersList = document.getElementById('players');
-      playersList.innerHTML = '';
-      playersData = snapshot.val() || {};
-      
-      let total = 0;
-      let answered = 0;
+      const roster = document.getElementById('agent-roster');
+      roster.innerHTML = '';
+      const players = snapshot.val() || {};
 
-      for (let id in playersData) {
-        total++;
-        let p = playersData[id];
-        if (p.currentAnswer && p.currentAnswer !== "") {
-          answered++;
-        }
+      let totalAgents = 0;
+      let submittedCount = 0;
+
+      for (let id in players) {
+        totalAgents++;
+        let p = players[id];
+        let hasAnswered = p.currentAnswer && p.currentAnswer !== "";
+        if (hasAnswered) submittedCount++;
 
         let li = document.createElement('li');
-        let hasAnsweredClass = (p.currentAnswer && p.currentAnswer !== "") ? "answered" : "";
+        li.className = `player-card ${hasAnswered ? 'active-sub' : ''}`;
         li.innerHTML = `
-          <div>
-            <span class="status-dot ${hasAnsweredClass}"></span>
-            <strong style="margin-left: 8px;">${p.name}</strong>
+          <div style="display:flex; align-items:center;">
+            <span class="status-indicator ${hasAnswered ? 'ready' : ''}"></span>
+            <strong style="color:#fff;">${p.name}</strong>
           </div>
-          <span style="color:#58a6ff;">${p.score !== undefined ? p.score : 100} PTS</span>
+          <span style="color:var(--neon-cyan); font-weight:bold;">${p.score !== undefined ? p.score : 100} PTS</span>
         `;
-        playersList.appendChild(li);
+        roster.appendChild(li);
       }
 
-      document.getElementById('player-count').innerText = total;
-      document.getElementById('ans-count').innerText = answered;
-      document.getElementById('total-count').innerText = total;
+      document.getElementById('agent-count-badge').innerText = totalAgents;
+      document.getElementById('ans-count').innerText = submittedCount;
+      document.getElementById('total-count').innerText = totalAgents;
 
-      if (phase === "QUESTION" && total > 0 && answered === total) {
-        document.getElementById('alert-box').style.display = "block";
+      if (phase === "QUESTION" && totalAgents > 0 && submittedCount === totalAgents) {
+        document.getElementById('alert-banner').style.display = "block";
       } else {
-        document.getElementById('alert-box').style.display = "none";
+        document.getElementById('alert-banner').style.display = "none";
       }
     });
 
+    // Initialize Game state in Firebase
     db.ref('game_state').set({ nodeIndex: 0, phase: 'LOBBY', currentNodeKey: 'NODE_1' });
   </script>
 </body>
