@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Network+ Day 15 Cyber Incident Simulator</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    body { background-color: #0d1117; color: #58a6ff; font-family: 'Courier New', monospace; padding: 20px; }
+    .container { display: flex; gap: 20px; }
+    .main-panel { flex: 3; border: 1px solid #30363d; padding: 20px; border-radius: 6px; background: #161b22; }
+    .side-panel { flex: 1; border: 1px solid #30363d; padding: 20px; border-radius: 6px; background: #161b22; }
+    h1, h2 { color: #f0f6fc; }
+    .terminal { background: #000; color: #39ff14; padding: 15px; border-radius: 4px; font-size: 1.1em; white-space: pre-wrap; }
+    .btn { background: #238636; color: white; border: none; padding: 10px 20px; font-size: 1rem; cursor: pointer; border-radius: 6px; }
+    .player-list { list-style: none; padding: 0; }
+    .player-list li { background: #21262d; margin: 5px 0; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <h1>[INCIDENT RESPONSE CENTER] Network+ N10-009 Review</h1>
+  <div class="container">
+    <div class="main-panel">
+      <div id="story-title"><h2>LOBBY: Awaiting SOC Agents</h2></div>
+      <div id="story-body" class="terminal">Scan the QR code on the right to connect your mobile terminal...</div>
+      <br>
+      <button class="btn" onclick="nextStage()">Advance Narrative Node</button>
+    </div>
+    <div class="side-panel">
+      <h2>Active Agents (<span id="player-count">0</span>)</h2>
+      <img id="qr-code" src="" alt="QR Code" style="width:100%; max-width:180px; margin-bottom:10px;">
+      <ul id="players" class="player-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Firebase credentials configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Generate dynamic QR Code pointing to mobile UI
+    const mobileUrl = window.location.href.replace('index.html', '') + 'mobile.html';
+    document.getElementById('qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(mobileUrl)}`;
+
+    // Narrative content incorporating military tropes and technical objectives[cite: 1]
+    const nodes = [
+      {
+        title: "NODE 1: The 0300 Voluntold Shift",
+        body: "OPERATION BANNER BADGER: You were voluntold to cover the graveyard shift at the SOC because you made eye contact with the Chief. Suddenly, an external host starts probing port responses to identify OS versions and active services. The commander demands to know what's happening before his morning coffee runs out.\n\nTERMINAL PROMPT: Which phase of enumeration is actively targeting specific system/software versions?\n\n[A] Footprinting\n[B] Fingerprinting\n[C] Dumpster Diving\n[D] Tailgating",
+        key: "NODE_1"
+      },
+      {
+        title: "NODE 2: Mandatory Fun Under Attack",
+        body: "DEFCON 3: While the unit is trapped in a mandatory briefing, the edge firewall starts screaming. Multiple external threat actors are spamming TCP SYN packets, exhausting server connection queues and knocking services offline. The CO is threatening to cancel weekend liberty if email goes down.\n\nINCIDENT: What type of attack vector is currently saturating the perimeter?\n\n[A] On-Path Attack\n[B] Distributed Denial of Service (DDoS)\n[C] MAC Flooding\n[D] ARP Spoofing",
+        key: "NODE_2"
+      },
+      {
+        title: "NODE 3: The 'I Brought My Own Router' Incident",
+        body: "SELF-INFLICTED WOUND: A private plugged an unauthorized wireless router bought from the local PX into the wall jack to bypass network filters. Now workstations across the building are throwing duplicate IP errors and self-assigning 169.254.x.x addresses.\n\nTERMINAL PROMPT: Which TWO elements describe this chaotic situation?\n\n[A] Rogue DHCP Server deployment\n[B] APIPA auto-configuration activation\n[C] DNS Cache Poisoning\n[D] Kerberos Ticket Expiration",
+        key: "NODE_3"
+      },
+      {
+        title: "NODE 4: Core Switch Meltdown",
+        body: "S-6 EMERGENCY: An attacker is hammering the core switch with thousands of fake source MAC addresses per second, completely filling the CAM table. Your $20,000 enterprise switch just panicked and defaulted into acting like a cheap, unmanaged hub.\n\nINCIDENT: What layer 2 attack just turned your secure network into a free-for-all broadcast party?\n\n[A] VLAN Hopping\n[B] MAC Flooding\n[C] Double Tagging\n[D] Deauthentication Attack",
+        key: "NODE_4"
+      },
+      {
+        title: "NODE 5: Guards at the Gate",
+        body: "CREDENTIAL BREACH: Adversaries are trying to bypass local authentication over an untrusted network connection. They are trying to fool the 'three-headed guard dog' system to issue a Ticket Granting Ticket (TGT) without proper validation.\n\nTERMINAL PROMPT: Which secure authentication protocol uses a Key Distribution Center (KDC) to issue TGTs over untrusted networks?\n\n[A] RADIUS\n[B] TACACS+\n[C] Kerberos\n[D] PAP",
+        key: "NODE_5"
+      },
+      {
+        title: "NODE 6: The Inspector General Arrives",
+        body: "AFTER-ACTION REPORT: The attack is contained, but now the auditors are walking in the door with clipboards. Because payment transactions were processed on the base network during the breach, compliance officers demand proof that credit card data standards were upheld.\n\nAUDIT REQUIREMENT: Which regulatory standard specifically dictates security requirements for handling credit card data?\n\n[A] GDPR\n[B] PCI DSS\n[C] HIPAA\n[D] ISO 27001",
+        key: "NODE_6"
+      }
+    ];
+
+    let currentIdx = -1;
+
+    function nextStage() {
+      currentIdx++;
+      if (currentIdx < nodes.length) {
+        document.getElementById('story-title').innerHTML = `<h2>${nodes[currentIdx].title}</h2>`;
+        document.getElementById('story-body').innerText = nodes[currentIdx].body;
+        db.ref('game_state').set({ current_node: nodes[currentIdx].key });
+      } else {
+        document.getElementById('story-title').innerHTML = "<h2>INCIDENT RESOLVED</h2>";
+        document.getElementById('story-body').innerText = "Security Posture assessment complete. All units stand down for debrief.";
+        db.ref('game_state').set({ current_node: "END" });
+      }
+    }
+
+    // Sync live leaderboard from Firebase
+    db.ref('players').on('value', (snapshot) => {
+      const playersList = document.getElementById('players');
+      playersList.innerHTML = '';
+      const data = snapshot.val() || {};
+      let count = 0;
+      for (let id in data) {
+        count++;
+        let li = document.createElement('li');
+        li.innerHTML = `<span>${data[id].name}</span> <strong>${data[id].score || 100} PTS</strong>`;
+        playersList.appendChild(li);
+      }
+      document.getElementById('player-count').innerText = count;
+    });
+  </script>
+</body>
+</html>
