@@ -7,34 +7,48 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-    .input-field { padding: 12px; font-size: 1rem; width: 80%; margin-bottom: 10px; border-radius: 5px; }
-    .btn { background: #007bff; color: white; border: none; padding: 15px; margin: 8px 0; font-size: 1.2rem; width: 100%; border-radius: 8px; font-weight: bold; }
-    .btn:active { background: #0056b3; }
+    body { background: #0d1117; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; padding: 20px; margin: 0; }
+    .input-field { padding: 15px; font-size: 1.1rem; width: 85%; margin-bottom: 15px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: #fff; }
+    .btn { background: #238636; color: white; border: none; padding: 18px; margin: 8px 0; font-size: 1.2rem; width: 100%; border-radius: 8px; font-weight: bold; }
+    .btn:disabled { background: #21262d; color: #484f58; }
+    .btn-opt { background: #1f6feb; font-size: 1.5rem; padding: 25px; }
+    .btn-opt:active { background: #388bfd; }
     .hidden { display: none; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+    .feedback-box { padding: 25px; border-radius: 8px; margin-top: 20px; font-size: 1.3rem; font-weight: bold; }
+    .feedback-correct { background: #238636; color: white; border: 2px solid #39ff14; }
+    .feedback-incorrect { background: #da3633; color: white; border: 2px solid #f85149; }
+    .status-text { color: #8b949e; font-size: 1.1rem; margin-top: 15px; }
   </style>
 </head>
 <body>
+
   <div id="login-screen">
-    <h2>Enter Callsign</h2>
+    <h2 style="color: #58a6ff;">TACTICAL TERMINAL</h2>
+    <p style="color: #8b949e;">Enter callsign to connect to S-6 Net</p>
     <input type="text" id="username" class="input-field" placeholder="e.g., Sgt_Gunny"><br>
-    <button class="btn" onclick="joinGame()">Connect Terminal</button>
+    <button class="btn" onclick="joinGame()">Connect Device</button>
   </div>
 
   <div id="game-screen" class="hidden">
-    <h3 id="agent-display"></h3>
-    <p id="status-msg">Waiting for S-6 incident prompt...</p>
-    <div id="controls" class="grid hidden">
-      <button class="btn" onclick="sendAnswer('A')">A</button>
-      <button class="btn" onclick="sendAnswer('B')">B</button>
-      <button class="btn" onclick="sendAnswer('C')">C</button>
-      <button class="btn" onclick="sendAnswer('D')">D</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #30363d; padding-bottom: 10px;">
+      <span id="agent-display" style="font-weight: bold; color: #58a6ff;"></span>
+      <span id="score-display" style="font-weight: bold; color: #39ff14;">100 PTS</span>
     </div>
+
+    <p id="status-msg" class="status-text">Standby for briefing...</p>
+
+    <div id="controls" class="grid hidden">
+      <button class="btn btn-opt" onclick="sendAnswer('A')">A</button>
+      <button class="btn btn-opt" onclick="sendAnswer('B')">B</button>
+      <button class="btn btn-opt" onclick="sendAnswer('C')">C</button>
+      <button class="btn btn-opt" onclick="sendAnswer('D')">D</button>
+    </div>
+
+    <div id="feedback" class="feedback-box hidden"></div>
   </div>
 
   <script>
-    // Firebase configuration matching index.html
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -48,53 +62,101 @@
     const db = firebase.database();
 
     let playerId = "";
-    let currentScore = 100;
-    
-    // Correct answer key based on Day 15 Network+ objectives[cite: 1]
-    const answers = {
-      NODE_1: "B", // Fingerprinting identifies software/OS versions[cite: 1]
-      NODE_2: "B", // SYN Floods from external hosts represent DDoS attacks[cite: 1]
-      NODE_3: "A", // Rogue DHCP deployment triggers 169.254.x.x APIPA behavior[cite: 1]
-      NODE_4: "B", // MAC Flooding overflows the switch CAM table[cite: 1]
-      NODE_5: "C", // Kerberos utilizes a KDC to issue TGTs[cite: 1]
-      NODE_6: "B"  // PCI DSS governs credit card data handling[cite: 1]
+    let myLastAnswer = "";
+
+    const correctAnswers = {
+      0: "B", // Fingerprinting[cite: 1]
+      1: "B", // DDoS[cite: 1]
+      2: "A", // APIPA[cite: 1]
+      3: "B", // MAC Flooding[cite: 1]
+      4: "C", // Kerberos[cite: 1]
+      5: "B"  // PCI DSS[cite: 1]
     };
 
     function joinGame() {
-      const name = document.getElementById('username').value;
+      const name = document.getElementById('username').value.trim();
       if (!name) return;
-      playerId = 'player_' + Math.random().toString(36).substr(2, 9);
-      db.ref('players/' + playerId).set({ name: name, score: 100 });
       
+      playerId = 'agent_' + Math.random().toString(36).substr(2, 9);
+      db.ref('players/' + playerId).set({
+        name: name,
+        score: 100,
+        currentAnswer: ""
+      });
+
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('game-screen').classList.remove('hidden');
-      document.getElementById('agent-display').innerText = "Agent: " + name;
+      document.getElementById('agent-display').innerText = "AGENT: " + name;
 
       listenToGame();
+      listenToMyScore();
+    }
+
+    function listenToMyScore() {
+      db.ref(`players/${playerId}/score`).on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val !== null) {
+          document.getElementById('score-display').innerText = val + " PTS";
+        }
+      });
     }
 
     function listenToGame() {
-      db.ref('game_state/current_node').on('value', (snapshot) => {
-        const node = snapshot.val();
-        if (node && node !== "LOBBY" && node !== "END") {
-          document.getElementById('controls').classList.remove('hidden');
-          document.getElementById('status-msg').innerText = "TRANSMIT RESPONSE:";
-          window.currentNode = node;
-        } else {
-          document.getElementById('controls').classList.add('hidden');
-          document.getElementById('status-msg').innerText = node === "END" ? "Simulation Ended. Stand down." : "Standby for Host...";
+      db.ref('game_state').on('value', (snapshot) => {
+        const state = snapshot.val() || {};
+        const phase = state.phase;
+        const nodeIdx = state.nodeIndex;
+
+        const controls = document.getElementById('controls');
+        const feedback = document.getElementById('feedback');
+        const statusMsg = document.getElementById('status-msg');
+
+        feedback.classList.add('hidden');
+
+        if (phase === "LOBBY") {
+          controls.classList.add('hidden');
+          statusMsg.innerText = "Connected to SOC Command. Waiting for Operation Start...";
+        } else if (phase === "NARRATIVE") {
+          controls.classList.add('hidden');
+          myLastAnswer = "";
+          statusMsg.innerText = "👀 Eyes on Main Screen. Mission Briefing in Progress...";
+        } else if (phase === "QUESTION") {
+          if (!myLastAnswer) {
+            controls.classList.remove('hidden');
+            statusMsg.innerText = "SELECT YOUR RESPONSE:";
+          } else {
+            controls.classList.add('hidden');
+            statusMsg.innerText = "Response Transmitted. Awaiting Command Results...";
+          }
+        } else if (phase === "REVEAL") {
+          controls.classList.add('hidden');
+          statusMsg.innerText = "BATTLE DAMAGE ASSESSMENT IN PROGRESS";
+          
+          const correct = correctAnswers[nodeIdx];
+          feedback.classList.remove('hidden');
+
+          if (myLastAnswer === correct) {
+            feedback.className = "feedback-box feedback-correct";
+            feedback.innerText = "🛡️ SYSTEM SECURED (+10 PTS)";
+          } else if (myLastAnswer && myLastAnswer !== correct) {
+            feedback.className = "feedback-box feedback-incorrect";
+            feedback.innerText = "💥 SECURITY BREACH (-15 PTS)";
+          } else {
+            feedback.className = "feedback-box feedback-incorrect";
+            feedback.innerText = "⚠️ NO RESPONSE TRANSMITTED (0 PTS)";
+          }
+        } else if (phase === "END") {
+          controls.classList.add('hidden');
+          statusMsg.innerText = "OPERATION COMPLETE. Stand down for final debrief.";
         }
       });
     }
 
     function sendAnswer(choice) {
-      const correct = answers[window.currentNode];
-      if (choice !== correct) {
-        currentScore = Math.max(0, currentScore - 15);
-        db.ref('players/' + playerId + '/score').set(currentScore);
-      }
+      myLastAnswer = choice;
+      db.ref(`players/${playerId}/currentAnswer`).set(choice);
       document.getElementById('controls').classList.add('hidden');
-      document.getElementById('status-msg').innerText = "Response Transmitted. Awaiting results...";
+      document.getElementById('status-msg').innerText = "Response Transmitted. Standby for Command Results...";
     }
   </script>
 </body>
