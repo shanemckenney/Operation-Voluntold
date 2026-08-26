@@ -3,68 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SOC Agent Controller</title>
+  <title>Agent Mobile Terminal</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
   <style>
-    body { background: #0d1117; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; padding: 20px; margin: 0; }
-    .input-field { padding: 15px; font-size: 1.1rem; width: 85%; margin-bottom: 15px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: #fff; }
-    .btn { background: #238636; color: white; border: none; padding: 18px; margin: 8px 0; font-size: 1.2rem; width: 100%; border-radius: 8px; font-weight: bold; }
-    .btn:disabled { background: #21262d; color: #484f58; }
-    .btn-opt { background: #1f6feb; font-size: 1.5rem; padding: 25px; }
-    .btn-opt:active { background: #388bfd; }
+    :root {
+      --bg: #070b12;
+      --panel: #0f1724;
+      --panel-border: #1e2c40;
+      --neon-green: #00ff66;
+      --neon-cyan: #00f0ff;
+      --neon-red: #ff3366;
+      --btn-blue: #1a73e8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'Share Tech Mono', monospace;
+      text-align: center;
+      padding: 15px;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      padding: 12px 18px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .callsign-text { font-family: 'Orbitron', sans-serif; color: var(--neon-cyan); font-weight: bold; }
+    .score-text { font-family: 'Orbitron', sans-serif; color: var(--neon-green); font-weight: bold; }
+
+    .input-box {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      background: #0b111a;
+      color: #fff;
+      font-family: inherit;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .btn-submit {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #00f0ff 0%, #0088ff 100%);
+      color: #000;
+      border: none;
+      padding: 16px;
+      font-size: 1.1rem;
+      width: 100%;
+      border-radius: 6px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .grid-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .btn-choice {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(145deg, #132235, #0a1320);
+      border: 2px solid var(--panel-border);
+      color: var(--neon-cyan);
+      font-size: 2rem;
+      padding: 30px 0;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      transition: all 0.1s;
+    }
+
+    .btn-choice:active {
+      transform: scale(0.96);
+      border-color: var(--neon-cyan);
+      background: var(--btn-blue);
+      color: #fff;
+    }
+
+    .status-msg {
+      color: #8a9bb0;
+      font-size: 1.1rem;
+      margin: 25px 0;
+      line-height: 1.5;
+    }
+
+    .feedback-card {
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    .feedback-pass {
+      background: rgba(0, 255, 102, 0.15);
+      border: 2px solid var(--neon-green);
+      color: var(--neon-green);
+    }
+
+    .feedback-fail {
+      background: rgba(255, 51, 102, 0.15);
+      border: 2px solid var(--neon-red);
+      color: var(--neon-red);
+    }
+
     .hidden { display: none; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-    .feedback-box { padding: 25px; border-radius: 8px; margin-top: 20px; font-size: 1.3rem; font-weight: bold; }
-    .feedback-correct { background: #238636; color: white; border: 2px solid #39ff14; }
-    .feedback-incorrect { background: #da3633; color: white; border: 2px solid #f85149; }
-    .status-text { color: #8b949e; font-size: 1.1rem; margin-top: 15px; }
   </style>
 </head>
 <body>
 
-  <div id="login-screen">
-    <h2 style="color: #58a6ff;">TACTICAL TERMINAL</h2>
-    <p style="color: #8b949e;">Enter callsign to connect to S-6 Net</p>
-    <input type="text" id="username" class="input-field" placeholder="e.g., Sgt_Gunny"><br>
-    <button class="btn" onclick="joinGame()">Connect Device</button>
+  <!-- Login UI -->
+  <div id="login-ui" style="max-width: 400px; margin: 40px auto 0 auto;">
+    <h1 style="font-family:'Orbitron', sans-serif; color:var(--neon-cyan); font-size:1.5rem;">AGENT TERMINAL</h1>
+    <p style="color:#8a9bb0; margin-bottom: 25px;">Enter callsign to authenticate on S-6 network</p>
+    <input type="text" id="username" class="input-box" placeholder="e.g., Sgt_Gunny"><br>
+    <button class="btn-submit" onclick="connectTerminal()">PAIR TERMINAL</button>
   </div>
 
-  <div id="game-screen" class="hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #30363d; padding-bottom: 10px;">
-      <span id="agent-display" style="font-weight: bold; color: #58a6ff;"></span>
-      <span id="score-display" style="font-weight: bold; color: #39ff14;">100 PTS</span>
+  <!-- Game UI -->
+  <div id="game-ui" class="hidden">
+    <div class="header-bar">
+      <span id="callsign-display" class="callsign-text">AGENT</span>
+      <span id="score-display" class="score-text">100 PTS</span>
     </div>
 
-    <p id="status-msg" class="status-text">Standby for briefing...</p>
+    <p id="status-display" class="status-msg">Connected to Tactical Net. Waiting for briefing...</p>
 
-    <div id="controls" class="grid hidden">
-      <button class="btn btn-opt" onclick="sendAnswer('A')">A</button>
-      <button class="btn btn-opt" onclick="sendAnswer('B')">B</button>
-      <button class="btn btn-opt" onclick="sendAnswer('C')">C</button>
-      <button class="btn btn-opt" onclick="sendAnswer('D')">D</button>
+    <div id="choice-grid" class="grid-btns hidden">
+      <button class="btn-choice" onclick="submitChoice('A')">A</button>
+      <button class="btn-choice" onclick="submitChoice('B')">B</button>
+      <button class="btn-choice" onclick="submitChoice('C')">C</button>
+      <button class="btn-choice" onclick="submitChoice('D')">D</button>
     </div>
 
-    <div id="feedback" class="feedback-box hidden"></div>
+    <div id="feedback-card" class="feedback-card hidden"></div>
   </div>
 
   <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "SENDER_ID",
-      appId: "APP_ID"
+  apiKey: "AIzaSyAp-Bft2q1zwGoF6q9wMdyQkBd4BDTbnms",
+  authDomain: "operation-voluntold.firebaseapp.com",
+  projectId: "operation-voluntold",
+  storageBucket: "operation-voluntold.firebasestorage.app",
+  messagingSenderId: "373011790429",
+  appId: "1:373011790429:web:a9e8af4bc05b43427c2bb4"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let playerId = "";
-    let myLastAnswer = "";
+    let mySelectedChoice = "";
 
-    const correctAnswers = {
+    const answerKey = {
       0: "B", // Fingerprinting[cite: 1]
       1: "B", // DDoS[cite: 1]
       2: "A", // APIPA[cite: 1]
@@ -73,22 +181,27 @@
       5: "B"  // PCI DSS[cite: 1]
     };
 
-    function joinGame() {
+    function connectTerminal() {
       const name = document.getElementById('username').value.trim();
       if (!name) return;
-      
+
       playerId = 'agent_' + Math.random().toString(36).substr(2, 9);
-      db.ref('players/' + playerId).set({
+      
+      const playerRef = db.ref('players/' + playerId);
+      playerRef.set({
         name: name,
         score: 100,
         currentAnswer: ""
       });
 
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('game-screen').classList.remove('hidden');
-      document.getElementById('agent-display').innerText = "AGENT: " + name;
+      // Maintain live presence; cleanup if disconnected
+      playerRef.onDisconnect().remove();
 
-      listenToGame();
+      document.getElementById('login-ui').classList.add('hidden');
+      document.getElementById('game-ui').classList.remove('hidden');
+      document.getElementById('callsign-display').innerText = name.toUpperCase();
+
+      listenToGameState();
       listenToMyScore();
     }
 
@@ -101,62 +214,62 @@
       });
     }
 
-    function listenToGame() {
+    function listenToGameState() {
       db.ref('game_state').on('value', (snapshot) => {
         const state = snapshot.val() || {};
         const phase = state.phase;
         const nodeIdx = state.nodeIndex;
 
-        const controls = document.getElementById('controls');
-        const feedback = document.getElementById('feedback');
-        const statusMsg = document.getElementById('status-msg');
+        const grid = document.getElementById('choice-grid');
+        const feedback = document.getElementById('feedback-card');
+        const status = document.getElementById('status-display');
 
         feedback.classList.add('hidden');
 
         if (phase === "LOBBY") {
-          controls.classList.add('hidden');
-          statusMsg.innerText = "Connected to SOC Command. Waiting for Operation Start...";
+          grid.classList.add('hidden');
+          status.innerText = "Connected to Command. Waiting for operation start...";
         } else if (phase === "NARRATIVE") {
-          controls.classList.add('hidden');
-          myLastAnswer = "";
-          statusMsg.innerText = "👀 Eyes on Main Screen. Mission Briefing in Progress...";
+          grid.classList.add('hidden');
+          mySelectedChoice = "";
+          status.innerText = "👀 Eyes on Command Screen for Situation Briefing...";
         } else if (phase === "QUESTION") {
-          if (!myLastAnswer) {
-            controls.classList.remove('hidden');
-            statusMsg.innerText = "SELECT YOUR RESPONSE:";
+          if (!mySelectedChoice) {
+            grid.classList.remove('hidden');
+            status.innerText = "TRANSMIT TACTICAL RESPONSE:";
           } else {
-            controls.classList.add('hidden');
-            statusMsg.innerText = "Response Transmitted. Awaiting Command Results...";
+            grid.classList.add('hidden');
+            status.innerText = "Transmission Received. Awaiting Command Evaluation...";
           }
         } else if (phase === "REVEAL") {
-          controls.classList.add('hidden');
-          statusMsg.innerText = "BATTLE DAMAGE ASSESSMENT IN PROGRESS";
-          
-          const correct = correctAnswers[nodeIdx];
+          grid.classList.add('hidden');
+          status.innerText = "DAMAGE ASSESSMENT IN PROGRESS";
+
+          const correct = answerKey[nodeIdx];
           feedback.classList.remove('hidden');
 
-          if (myLastAnswer === correct) {
-            feedback.className = "feedback-box feedback-correct";
+          if (mySelectedChoice === correct) {
+            feedback.className = "feedback-card feedback-pass";
             feedback.innerText = "🛡️ SYSTEM SECURED (+10 PTS)";
-          } else if (myLastAnswer && myLastAnswer !== correct) {
-            feedback.className = "feedback-box feedback-incorrect";
+          } else if (mySelectedChoice && mySelectedChoice !== correct) {
+            feedback.className = "feedback-card feedback-fail";
             feedback.innerText = "💥 SECURITY BREACH (-15 PTS)";
           } else {
-            feedback.className = "feedback-box feedback-incorrect";
+            feedback.className = "feedback-card feedback-fail";
             feedback.innerText = "⚠️ NO RESPONSE TRANSMITTED (0 PTS)";
           }
         } else if (phase === "END") {
-          controls.classList.add('hidden');
-          statusMsg.innerText = "OPERATION COMPLETE. Stand down for final debrief.";
+          grid.classList.add('hidden');
+          status.innerText = "OPERATION COMPLETE. Review overall ranks on Main Screen.";
         }
       });
     }
 
-    function sendAnswer(choice) {
-      myLastAnswer = choice;
+    function submitChoice(choice) {
+      mySelectedChoice = choice;
       db.ref(`players/${playerId}/currentAnswer`).set(choice);
-      document.getElementById('controls').classList.add('hidden');
-      document.getElementById('status-msg').innerText = "Response Transmitted. Standby for Command Results...";
+      document.getElementById('choice-grid').classList.add('hidden');
+      document.getElementById('status-display').innerText = "Transmission Received. Awaiting Command Evaluation...";
     }
   </script>
 </body>
