@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOC Agent Controller</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+    .input-field { padding: 12px; font-size: 1rem; width: 80%; margin-bottom: 10px; border-radius: 5px; }
+    .btn { background: #007bff; color: white; border: none; padding: 15px; margin: 8px 0; font-size: 1.2rem; width: 100%; border-radius: 8px; font-weight: bold; }
+    .btn:active { background: #0056b3; }
+    .hidden { display: none; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  </style>
+</head>
+<body>
+  <div id="login-screen">
+    <h2>Enter Callsign</h2>
+    <input type="text" id="username" class="input-field" placeholder="e.g., Sgt_Gunny"><br>
+    <button class="btn" onclick="joinGame()">Connect Terminal</button>
+  </div>
+
+  <div id="game-screen" class="hidden">
+    <h3 id="agent-display"></h3>
+    <p id="status-msg">Waiting for S-6 incident prompt...</p>
+    <div id="controls" class="grid hidden">
+      <button class="btn" onclick="sendAnswer('A')">A</button>
+      <button class="btn" onclick="sendAnswer('B')">B</button>
+      <button class="btn" onclick="sendAnswer('C')">C</button>
+      <button class="btn" onclick="sendAnswer('D')">D</button>
+    </div>
+  </div>
+
+  <script>
+    // Firebase configuration matching index.html
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let playerId = "";
+    let currentScore = 100;
+    
+    // Correct answer key based on Day 15 Network+ objectives[cite: 1]
+    const answers = {
+      NODE_1: "B", // Fingerprinting identifies software/OS versions[cite: 1]
+      NODE_2: "B", // SYN Floods from external hosts represent DDoS attacks[cite: 1]
+      NODE_3: "A", // Rogue DHCP deployment triggers 169.254.x.x APIPA behavior[cite: 1]
+      NODE_4: "B", // MAC Flooding overflows the switch CAM table[cite: 1]
+      NODE_5: "C", // Kerberos utilizes a KDC to issue TGTs[cite: 1]
+      NODE_6: "B"  // PCI DSS governs credit card data handling[cite: 1]
+    };
+
+    function joinGame() {
+      const name = document.getElementById('username').value;
+      if (!name) return;
+      playerId = 'player_' + Math.random().toString(36).substr(2, 9);
+      db.ref('players/' + playerId).set({ name: name, score: 100 });
+      
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('game-screen').classList.remove('hidden');
+      document.getElementById('agent-display').innerText = "Agent: " + name;
+
+      listenToGame();
+    }
+
+    function listenToGame() {
+      db.ref('game_state/current_node').on('value', (snapshot) => {
+        const node = snapshot.val();
+        if (node && node !== "LOBBY" && node !== "END") {
+          document.getElementById('controls').classList.remove('hidden');
+          document.getElementById('status-msg').innerText = "TRANSMIT RESPONSE:";
+          window.currentNode = node;
+        } else {
+          document.getElementById('controls').classList.add('hidden');
+          document.getElementById('status-msg').innerText = node === "END" ? "Simulation Ended. Stand down." : "Standby for Host...";
+        }
+      });
+    }
+
+    function sendAnswer(choice) {
+      const correct = answers[window.currentNode];
+      if (choice !== correct) {
+        currentScore = Math.max(0, currentScore - 15);
+        db.ref('players/' + playerId + '/score').set(currentScore);
+      }
+      document.getElementById('controls').classList.add('hidden');
+      document.getElementById('status-msg').innerText = "Response Transmitted. Awaiting results...";
+    }
+  </script>
+</body>
+</html>
