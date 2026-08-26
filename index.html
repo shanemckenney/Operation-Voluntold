@@ -424,14 +424,12 @@ Enter your Callsign to join the operation.
     let currentIdx = 0;
     let phase = "LOBBY";
     let postureScore = 100;
-    let questionStartTimestamp = 0;
 
     function updateDbState() {
       db.ref('game_state').set({
         nodeIndex: currentIdx,
         phase: phase,
-        currentNodeKey: storyNodes[currentIdx] ? storyNodes[currentIdx].key : "END",
-        questionStartTime: questionStartTimestamp
+        currentNodeKey: storyNodes[currentIdx] ? storyNodes[currentIdx].key : "END"
       });
     }
 
@@ -441,7 +439,7 @@ Enter your Callsign to join the operation.
         for (let id in players) {
           db.ref(`players/${id}`).update({
             currentAnswer: "",
-            answerTimestamp: 0
+            elapsedSeconds: 0
           });
         }
       });
@@ -465,7 +463,6 @@ Enter your Callsign to join the operation.
         btn.innerText = "Deploy Question Terminal";
       } else if (phase === "NARRATIVE") {
         phase = "QUESTION";
-        questionStartTimestamp = Date.now();
         tracker.style.display = "block";
         clearAgentResponses();
         renderScreen();
@@ -505,13 +502,12 @@ Enter your Callsign to join the operation.
           if (p.currentAnswer && p.currentAnswer !== "") {
             if (p.currentAnswer === node.correct) {
               // Calculate dynamic decay points (Max 300, -10 points/sec, Min 50)
-              let answerTime = p.answerTimestamp || questionStartTimestamp;
-              let secondsElapsed = Math.max(0, (answerTime - questionStartTimestamp) / 1000);
-              let pointsEarned = Math.max(50, Math.round(300 - (secondsElapsed * 10)));
-              
+              let seconds = p.elapsedSeconds || 0;
+              let pointsEarned = Math.max(50, Math.round(300 - (seconds * 10)));
               score += pointsEarned;
             } else {
               incorrectCount++;
+              score = Math.max(0, score - 50); // Deduct 50 points for wrong answers
             }
             db.ref(`players/${id}/score`).set(score);
           }
@@ -562,7 +558,6 @@ Enter your Callsign to join the operation.
       let totalAgents = 0;
       let submittedCount = 0;
 
-      // Sort players by score descending for leaderboard ranking
       let sortedPlayers = Object.keys(players).map(key => ({ id: key, ...players[key] }));
       sortedPlayers.sort((a, b) => (b.score || 0) - (a.score || 0));
 
@@ -594,7 +589,7 @@ Enter your Callsign to join the operation.
       }
     });
 
-    db.ref('game_state').set({ nodeIndex: 0, phase: 'LOBBY', currentNodeKey: 'NODE_1', questionStartTime: 0 });
+    db.ref('game_state').set({ nodeIndex: 0, phase: 'LOBBY', currentNodeKey: 'NODE_1' });
   </script>
 </body>
 </html>
