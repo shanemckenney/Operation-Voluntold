@@ -35,7 +35,6 @@
       min-height: 100vh;
     }
 
-    /* Top HUD Navigation Bar */
     .hud-bar {
       display: flex;
       justify-content: space-between;
@@ -64,7 +63,6 @@
       margin-top: 4px;
     }
 
-    /* Decaying Security Posture Health Bar */
     .posture-container {
       width: 280px;
       text-align: right;
@@ -94,7 +92,6 @@
       box-shadow: 0 0 10px var(--neon-green);
     }
 
-    /* Layout Grid */
     .grid-container {
       display: grid;
       grid-template-columns: 3fr 1fr;
@@ -119,7 +116,6 @@
       flex-direction: column;
     }
 
-    /* Classified Badge & Intel Cards */
     .intel-tag {
       display: inline-block;
       background: rgba(255, 51, 102, 0.15);
@@ -166,9 +162,9 @@
       color: #fff;
       margin-bottom: 25px;
       box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);
+      white-space: pre-wrap;
     }
 
-    /* Controls & Buttons */
     .btn-action {
       font-family: 'Orbitron', sans-serif;
       background: linear-gradient(135deg, #00f0ff 0%, #0088ff 100%);
@@ -190,7 +186,6 @@
       box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
     }
 
-    /* Live Counter & Alerts */
     .alert-banner {
       background: rgba(255, 170, 0, 0.2);
       border: 2px solid var(--neon-amber);
@@ -217,7 +212,6 @@
       font-weight: bold;
     }
 
-    /* Player Roster UI */
     .roster-title {
       font-family: 'Orbitron', sans-serif;
       font-size: 1rem;
@@ -267,7 +261,6 @@
       box-shadow: 0 0 8px var(--neon-green);
     }
 
-    /* QR Code Display Framing */
     .qr-frame {
       background: #fff;
       padding: 15px;
@@ -295,7 +288,6 @@
 </head>
 <body>
 
-  <!-- Top HUD Bar -->
   <div class="hud-bar">
     <div class="title-block">
       <h1>Tactical SOC Command Console</h1>
@@ -320,7 +312,6 @@
     </div>
   </div>
 
-  <!-- Main Grid Layout -->
   <div class="grid-container">
     <div class="main-stage">
       <div id="alert-banner" class="alert-banner">⚡ ALL FIELD AGENTS HAVE SUBMITTED RESPONSES! READY FOR DEBRIEF. ⚡</div>
@@ -347,7 +338,6 @@ Enter your Callsign to join the operation.
       <button id="btn-next" class="btn-action" onclick="advanceOperation()">Commence Operation (Node 1)</button>
     </div>
 
-    <!-- Side HUD Roster -->
     <div class="side-hud">
       <div class="roster-title">
         <span>ACTIVE AGENTS</span>
@@ -358,7 +348,6 @@ Enter your Callsign to join the operation.
   </div>
 
   <script>
-    // Firebase credentials configuration
     const firebaseConfig = {
   apiKey: "AIzaSyAp-Bft2q1zwGoF6q9wMdyQkBd4BDTbnms",
   authDomain: "operation-voluntold.firebaseapp.com",
@@ -370,72 +359,70 @@ Enter your Callsign to join the operation.
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Set QR code links dynamically
     const mobileUrl = window.location.href.replace('index.html', '') + 'mobile.html';
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(mobileUrl)}`;
     document.getElementById('qr-large').src = qrApiUrl;
     document.getElementById('qr-mini').src = qrApiUrl;
 
-    // Narrative and Game Objectives Data
     const storyNodes = [
       {
         key: "NODE_1",
-        badge: "CLASSIFIED // INCIDENT 01 - RECONNAISSANCE",
+        badge: "CLASSIFIED // INCIDENT 01 — RECONNAISSANCE",
         title: "The 0300 Voluntold Shift",
-        story: "OPERATION BANNER BADGER: You were voluntold to cover the graveyard shift at the SOC because you made direct eye contact with the Chief. Suddenly, an external host starts probing port responses across the subnet to identify operating system versions and active software services[cite: 1]. The CO demands an immediate diagnosis before his morning coffee runs out.",
-        question: "TERMINAL PROMPT: Which specific phase of enumeration is actively probing responses to identify system and software versions[cite: 1]?\n\n[A] Footprinting\n[B] Fingerprinting\n[C] Dumpster Diving\n[D] Tailgating",
+        story: "OPERATION BANNER BADGER: It is 0314 on a Tuesday. You are only on SOC night watch because you accidentally made direct eye contact with the Chief Warrant Officer during yesterday’s 1630 liberty formation. As you fight off sleep deprivation and lukewarm MRE coffee, Terminal 4 starts screaming. An external host (185.220.101.5) is firing rapid packet probes at your public web and email servers, actively analyzing open port banners, TCP window sizes, and response headers to pin down exact Linux kernel versions and Apache builds. The CO just walked in—still wearing his PT gear—demanding to know if this is a full-blown breach before his morning run.",
+        question: "TERMINAL PROMPT: Which specific phase of enumeration is actively probing system responses to identify precise operating system and software version numbers?\n\n[A] Footprinting\n[B] Fingerprinting\n[C] Dumpster Diving\n[D] Tailgating",
         correct: "B",
-        debrief: "DEBRIEF: Fingerprinting explicitly analyzes service/port responses to uncover operating system and software version numbers[cite: 1]. Footprinting maps out broader network topology and infrastructure bounds[cite: 1]."
+        debrief: "DEBRIEF: Fingerprinting explicitly analyzes service/port responses to uncover operating system and software version numbers. Footprinting maps out broader network topology and infrastructure bounds."
       },
       {
         key: "NODE_2",
-        badge: "CLASSIFIED // INCIDENT 02 - EDGE INTRUSION",
+        badge: "CLASSIFIED // INCIDENT 02 — EDGE INTRUSION",
         title: "Mandatory Fun Under Attack",
-        story: "DEFCON 3: While the unit is trapped in a mandatory briefing, the edge firewall starts screaming alerts. Multiple external threat actors are flooding the perimeter with TCP SYN packets, exhausting server connection queues and threatening a full outage[cite: 1]. The CO vows to cancel weekend liberty if email goes down.",
-        question: "INCIDENT ASSESSMENT: What specific attack vector is currently saturating server resources from external targets[cite: 1]?\n\n[A] On-Path Attack\n[B] Distributed Denial of Service (DDoS)\n[C] MAC Flooding\n[D] ARP Spoofing",
+        story: "DEFCON 3: The entire battalion is trapped in the auditorium for mandatory annual training on proper email etiquette. Suddenly, your smartwatch buzzes with 47 critical alerts. An external botnet is pummeling your edge firewall, firing tens of thousands of spoofed TCP SYN requests per second to fill up server connection queues before handshakes can complete. Email is dead, the portal is down, and the CO is staring at his phone, threatening to cancel 96-hour weekend passes if he can't send his weekly slide deck.\n\n[FIREWALL ALERT - STATE TABLE SATURATION]\n03:22:10.104231 IP 192.0.2.45.48201 > 10.0.1.50.80: Flags [S], seq 3829104, win 65535\n03:22:10.104288 IP 198.51.100.12.51102 > 10.0.1.50.80: Flags [S], seq 9182301, win 65535\n03:22:10.104312 IP 203.0.113.89.60124 > 10.0.1.50.80: Flags [S], seq 4710293, win 65535\n03:22:10.104355 IP 198.51.100.99.41022 > 10.0.1.50.80: Flags [S], seq 1029384, win 65535\n[CRITICAL] TCP SYN Queue Full (100% Capacity / 10000 Half-Open Connections) - Dropping Traffic",
+        question: "INCIDENT ASSESSMENT: What specific attack vector is currently saturating perimeter state tables using distributed external hosts?\n\n[A] On-Path Attack\n[B] Distributed Denial of Service (DDoS)\n[C] MAC Flooding\n[D] ARP Spoofing",
         correct: "B",
-        debrief: "DEBRIEF: A Distributed Denial of Service (DDoS) attack leverages multiple distributed hosts to flood bandwidth or exhaust connection resources (such as SYN floods)[cite: 1]."
+        debrief: "DEBRIEF: A Distributed Denial of Service (DDoS) attack leverages multiple distributed hosts to flood bandwidth or exhaust connection resources (such as SYN floods)."
       },
       {
         key: "NODE_3",
-        badge: "CLASSIFIED // INCIDENT 03 - INTERNAL SABOTAGE",
+        badge: "CLASSIFIED // INCIDENT 03 — INTERNAL SABOTAGE",
         title: "The 'I Brought My Own Router' Incident",
-        story: "SELF-INFLICTED WOUND: A private plugged an unauthorized wireless router bought at the local PX into an office wall jack to bypass network filters[cite: 1]. Within hours, workstations across the battalion are throwing duplicate IP errors and assigning themselves 169.254.x.x addresses[cite: 1].",
-        question: "TERMINAL PROMPT: What automatic client mechanism assigned 169.254.x.x addresses when the rogue router disrupted normal DHCP address assignment[cite: 1]?\n\n[A] APIPA\n[B] DNSSEC\n[C] Kerberos\n[D] TACACS+",
+        story: "SELF-INFLICTED WOUND: A brand-new Private First Class wanted faster Wi-Fi to stream video games in the duty room, so he bought a $25 wireless router from the local PX and plugged its LAN port directly into an office wall jack. His rogue box is now racing the official S-6 DHCP server to hand out garbage network settings. Half the workstations in HQ are throwing duplicate IP errors, losing their default gateway, and self-assigning 169.254.x.x addresses. The Operations Officer can't open his spreadsheets and is actively hunting through the building for whoever 'broke the internet.'",
+        question: "TERMINAL PROMPT: What automatic client configuration protocol generated those 169.254.x.x self-assigned addresses when DHCP address assignment failed?\n\n[A] APIPA\n[B] DNSSEC\n[C] Kerberos\n[D] TACACS+",
         correct: "A",
-        debrief: "DEBRIEF: Automatic Private IP Addressing (APIPA) assigns a 169.254.0.0/16 address when a device fails to obtain an IP lease from a valid DHCP server[cite: 1]."
+        debrief: "DEBRIEF: Automatic Private IP Addressing (APIPA) assigns a 169.254.0.0/16 address when a device fails to obtain an IP lease from a valid DHCP server."
       },
       {
         key: "NODE_4",
-        badge: "CLASSIFIED // INCIDENT 04 - SWITCH MELTDOWN",
+        badge: "CLASSIFIED // INCIDENT 04 — SWITCH MELTDOWN",
         title: "Core Switch Meltdown",
-        story: "S-6 EMERGENCY: An attacker is spamming the core switch with thousands of fake source MAC addresses per second, overflowing the CAM table[cite: 1]. Your $20,000 enterprise switch panics and defaults into acting like an unmanaged hub, broadcasting all traffic across every port[cite: 1].",
-        question: "INCIDENT ASSESSMENT: What Layer 2 attack just turned your secure switch into a broadcast hub[cite: 1]?\n\n[A] VLAN Hopping\n[B] MAC Flooding\n[C] Double Tagging\n[D] Deauthentication Attack",
+        story: "S-6 EMERGENCY: A physical intruder snuck into an unlocked broom closet and plugged a laptop into an open wall jack. Within seconds, an automated script started hammering your core switch with 15,000 randomized source MAC addresses per second (00:11:22:AA:BB:CC, 00:11:22:AA:BB:CD, ...). Your $20,000 enterprise switch’s CAM table just completely filled up and panicked—causing the switch to fail open and start broadcasting every single frame out of every port like a cheap $10 hub. The attacker is now sitting back and quietly sniffing sensitive traffic from the entire building.",
+        question: "INCIDENT ASSESSMENT: What Layer 2 attack just forced your enterprise switch to overflow its CAM table and fail open into hub mode?\n\n[A] VLAN Hopping\n[B] MAC Flooding\n[C] Double Tagging\n[D] Deauthentication Attack",
         correct: "B",
-        debrief: "DEBRIEF: MAC Flooding overloads a switch's Content Addressable Memory (CAM) table with spoofed source MAC addresses, forcing the switch to flood incoming traffic out all ports[cite: 1]."
+        debrief: "DEBRIEF: MAC Flooding overloads a switch's Content Addressable Memory (CAM) table with spoofed source MAC addresses, forcing the switch to flood incoming traffic out all ports."
       },
       {
         key: "NODE_5",
-        badge: "CLASSIFIED // INCIDENT 05 - IDENTITY BREACH",
+        badge: "CLASSIFIED // INCIDENT 05 — IDENTITY BREACH",
         title: "Guards at the Gate",
-        story: "CREDENTIAL BREACH: Adversaries are attempting to bypass local access controls over an unencrypted network domain[cite: 1]. They are trying to trick the 'three-headed guard dog' system into issuing a Ticket Granting Ticket (TGT) without valid authentication credentials[cite: 1].",
-        question: "TERMINAL PROMPT: Which secure authentication protocol uses a Key Distribution Center (KDC) to grant TGTs over insecure networks[cite: 1]?\n\n[A] RADIUS\n[B] TACACS+\n[C] Kerberos\n[D] PAP",
+        story: "CREDENTIAL BREACH: Adversaries on the network are attempting to intercept and forge local domain credentials across an unencrypted subnet. Instead of brute-forcing individual passwords, they are targeting the central authentication authority, attempting to forge administrative Ticket Granting Tickets (TGTs) to gain permanent 'keys to the kingdom' access across all domain services without triggering password reset alerts.",
+        question: "TERMINAL PROMPT: Which secure SSO authentication protocol uses a Key Distribution Center (KDC) to issue encrypted TGTs across untrusted networks?\n\n[A] RADIUS\n[B] TACACS+\n[C] Kerberos\n[D] PAP",
         correct: "C",
-        debrief: "DEBRIEF: Kerberos uses a Key Distribution Center (KDC) consisting of an Authentication Service and Ticket Granting Service to safely issue TGTs across insecure networks[cite: 1]."
+        debrief: "DEBRIEF: Kerberos uses a Key Distribution Center (KDC) consisting of an Authentication Service and Ticket Granting Service to safely issue TGTs across insecure networks."
       },
       {
         key: "NODE_6",
-        badge: "CLASSIFIED // INCIDENT 06 - REGULATORY AUDIT",
+        badge: "CLASSIFIED // INCIDENT 06 — REGULATORY AUDIT",
         title: "The Inspector General Arrives",
-        story: "AFTER-ACTION REPORT: The physical and digital breaches are contained, but auditors with clipboards have just walked in. Because credit card transactions were processed on base during the breach, inspectors demand verification of mandatory compliance standards[cite: 1].",
-        question: "AUDIT REQUIREMENT: Which regulatory standard specifically sets security requirements for safeguarding credit card data[cite: 1]?\n\n[A] GDPR\n[B] PCI DSS\n[C] HIPAA\n[D] ISO 27001",
+        story: "AFTER-ACTION REPORT: You managed to contain the breach, pull the rogue hardware, and restore the network core. But just as you go to collapse on your cot, two civilian auditors from the Inspector General’s office walk in wearing crisp suits and holding thick clipboards. Because the base commissary and MWR bowling alley process credit card transactions over the base network, the auditors demand immediate compliance logs proving cardholder data environments were completely isolated and secured during the incident.",
+        question: "AUDIT REQUIREMENT: Which regulatory compliance standard specifically dictates strict security requirements for processing and storing credit card transactions?\n\n[A] GDPR\n[B] PCI DSS\n[C] HIPAA\n[D] ISO 27001",
         correct: "B",
-        debrief: "DEBRIEF: Payment Card Industry Data Security Standard (PCI DSS) governs organizations handling credit card transactions to ensure payment security[cite: 1]."
+        debrief: "DEBRIEF: Payment Card Industry Data Security Standard (PCI DSS) governs organizations handling credit card transactions to ensure payment security."
       }
     ];
 
     let currentIdx = 0;
-    let phase = "LOBBY"; // LOBBY -> NARRATIVE -> QUESTION -> REVEAL -> END
+    let phase = "LOBBY";
     let postureScore = 100;
 
     function updateDbState() {
@@ -504,14 +491,12 @@ Enter your Callsign to join the operation.
       db.ref('players').once('value', (snapshot) => {
         const players = snapshot.val() || {};
         let incorrectCount = 0;
-        let totalResponded = 0;
 
         for (let id in players) {
           let p = players[id];
           let score = p.score !== undefined ? p.score : 100;
 
           if (p.currentAnswer && p.currentAnswer !== "") {
-            totalResponded++;
             if (p.currentAnswer === node.correct) {
               score += 10;
             } else {
@@ -522,7 +507,6 @@ Enter your Callsign to join the operation.
           }
         }
 
-        // Degrade Security Posture Health Bar if mistakes occurred
         if (incorrectCount > 0) {
           postureScore = Math.max(15, postureScore - (incorrectCount * 8));
           document.getElementById('posture-pct').innerText = postureScore + "%";
@@ -560,7 +544,6 @@ Enter your Callsign to join the operation.
       }
     }
 
-    // Realtime Database Player Listener
     db.ref('players').on('value', (snapshot) => {
       const roster = document.getElementById('agent-roster');
       roster.innerHTML = '';
@@ -598,7 +581,6 @@ Enter your Callsign to join the operation.
       }
     });
 
-    // Initialize Game state in Firebase
     db.ref('game_state').set({ nodeIndex: 0, phase: 'LOBBY', currentNodeKey: 'NODE_1' });
   </script>
 </body>
