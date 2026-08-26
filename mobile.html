@@ -140,7 +140,7 @@
   <div id="game-ui" class="hidden">
     <div class="header-bar">
       <span id="callsign-display" class="callsign-text">AGENT</span>
-      <span id="score-display" class="score-text">100 PTS</span>
+      <span id="score-display" class="score-text">0 PTS</span>
     </div>
 
     <p id="status-display" class="status-msg">Connected to Tactical Net. Waiting for briefing...</p>
@@ -157,18 +157,19 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyAp-Bft2q1zwGoF6q9wMdyQkBd4BDTbnms",
-  authDomain: "operation-voluntold.firebaseapp.com",
-  projectId: "operation-voluntold",
-  storageBucket: "operation-voluntold.firebasestorage.app",
-  messagingSenderId: "373011790429",
-  appId: "1:373011790429:web:a9e8af4bc05b43427c2bb4"
+      apiKey: "AIzaSyAp-Bft2q1zwGoF6q9wMdyQkBd4BDTbnms",
+      authDomain: "operation-voluntold.firebaseapp.com",
+      projectId: "operation-voluntold",
+      storageBucket: "operation-voluntold.firebasestorage.app",
+      messagingSenderId: "373011790429",
+      appId: "1:373011790429:web:a9e8af4bc05b43427c2bb4"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let playerId = "";
     let mySelectedChoice = "";
+    let questionReceivedTime = 0;
 
     const answerKey = {
       0: "B",
@@ -188,8 +189,9 @@
       const playerRef = db.ref('players/' + playerId);
       playerRef.set({
         name: name,
-        score: 100,
-        currentAnswer: ""
+        score: 0,
+        currentAnswer: "",
+        elapsedSeconds: 0
       });
 
       playerRef.onDisconnect().remove();
@@ -229,9 +231,13 @@
         } else if (phase === "NARRATIVE") {
           grid.classList.add('hidden');
           mySelectedChoice = "";
+          questionReceivedTime = 0;
           status.innerText = "👀 Eyes on Command Screen for Situation Briefing...";
         } else if (phase === "QUESTION") {
           if (!mySelectedChoice) {
+            if (!questionReceivedTime) {
+              questionReceivedTime = Date.now(); // Record local start time on device
+            }
             grid.classList.remove('hidden');
             status.innerText = "TRANSMIT TACTICAL RESPONSE:";
           } else {
@@ -247,10 +253,10 @@
 
           if (mySelectedChoice === correct) {
             feedback.className = "feedback-card feedback-pass";
-            feedback.innerText = "🛡️ SYSTEM SECURED (+10 PTS)";
+            feedback.innerText = "🛡️ SYSTEM SECURED (POINTS ADDED)";
           } else if (mySelectedChoice && mySelectedChoice !== correct) {
             feedback.className = "feedback-card feedback-fail";
-            feedback.innerText = "💥 SECURITY BREACH (-15 PTS)";
+            feedback.innerText = "💥 SECURITY BREACH (-50 PTS)";
           } else {
             feedback.className = "feedback-card feedback-fail";
             feedback.innerText = "⚠️ NO RESPONSE TRANSMITTED (0 PTS)";
@@ -264,7 +270,12 @@
 
     function submitChoice(choice) {
       mySelectedChoice = choice;
-      db.ref(`players/${playerId}/currentAnswer`).set(choice);
+      const elapsedSeconds = (Date.now() - questionReceivedTime) / 1000;
+      
+      db.ref(`players/${playerId}`).update({
+        currentAnswer: choice,
+        elapsedSeconds: elapsedSeconds
+      });
       document.getElementById('choice-grid').classList.add('hidden');
       document.getElementById('status-display').innerText = "Transmission Received. Awaiting Command Evaluation...";
     }
